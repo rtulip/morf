@@ -1,0 +1,23 @@
+[package]
+name = "morf"
+version = "0.1.0"
+authors = ["rtulip <robert.tulip97@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "client"
+path = "src/client/main.rs"
+
+[[bin]]
+name = "server"
+path = "src/server/main.rs"
+
+[lib]
+name = "shared"
+path = "src/shared/lib.rs"
+
+[dependencies]
+
+
