@@ -1,3 +1,4 @@
+use crate::networking;
 use amethyst::{
     core::bundle::SystemBundle,
     ecs::{DispatcherBuilder, Read, System, SystemData, World, Write},
@@ -11,10 +12,6 @@ use std::io::{Error as IoError, ErrorKind, Read as IoRead, Result as IoResult, W
 use std::net::SocketAddr;
 use std::net::{TcpListener, TcpStream};
 use std::ops::DerefMut;
-
-const TCP_CONNECTION_LISTENER_SYSTEM_NAME: &'static str = "TcpConnectionListenerSystem";
-const TCP_NETWORK_EVENT_HANDLER_SYSTEM_NAME: &'static str = "TcpNetworkEventHandlerSystem";
-const TCP_NETWORK_LISTENER_SYSTEM_NAME: &'static str = "TcpNetworkListenerSystem";
 
 #[derive(Debug)]
 pub enum NetworkEvent {
@@ -77,20 +74,20 @@ impl<'a, 'b> SystemBundle<'a, 'b> for TcpSystemBundle {
     ) -> Result<(), Error> {
         builder.add(
             TcpConnectionListenerSystem,
-            TCP_CONNECTION_LISTENER_SYSTEM_NAME,
+            networking::TCP_CONNECTION_LISTENER_SYSTEM_NAME,
             &[],
         );
         builder.add(
             TcpNetworkEventHandlerSystem::new(world),
-            TCP_NETWORK_EVENT_HANDLER_SYSTEM_NAME,
-            &[TCP_CONNECTION_LISTENER_SYSTEM_NAME],
+            networking::TCP_NETWORK_EVENT_HANDLER_SYSTEM_NAME,
+            &[networking::TCP_CONNECTION_LISTENER_SYSTEM_NAME],
         );
         builder.add(
             TcpNetworkListenerSystem,
-            TCP_NETWORK_LISTENER_SYSTEM_NAME,
+            networking::TCP_NETWORK_LISTENER_SYSTEM_NAME,
             &[
-                TCP_CONNECTION_LISTENER_SYSTEM_NAME,
-                TCP_NETWORK_EVENT_HANDLER_SYSTEM_NAME,
+                networking::TCP_CONNECTION_LISTENER_SYSTEM_NAME,
+                networking::TCP_NETWORK_EVENT_HANDLER_SYSTEM_NAME,
             ],
         );
         let mut network_res = NetworkResource::new(self.listener);
@@ -162,7 +159,7 @@ impl<'a> System<'a> for TcpNetworkListenerSystem {
                         ));
                     }
                 }
-                Err(e ) if e.kind() == ErrorKind::WouldBlock => {},
+                Err(e) if e.kind() == ErrorKind::WouldBlock => {}
                 Err(e) => {
                     error!("Network Recv Error: {}", e);
                 }
@@ -198,7 +195,7 @@ impl<'a> System<'a> for TcpNetworkEventHandlerSystem {
                         Ok(n_bytes) => info!("Sent {} bytes", n_bytes),
                         Err(e) => error!("Network Send Error: {}", e),
                     }
-                },
+                }
                 NetworkEvent::Message(addr, bytes) => {
                     info!("Recieved {:?} from {}", bytes, addr);
                 }

@@ -7,6 +7,7 @@ use amethyst::{
 use shared::networking;
 use std::net::{SocketAddr, TcpListener};
 use std::time::Duration;
+mod systems;
 
 #[derive(Default)]
 struct ClientGameModel;
@@ -40,10 +41,12 @@ fn main() -> amethyst::Result<()> {
         info!("config dir: {}", config_dir_str)
     }
 
-    let game_data = GameDataBuilder::default().with_bundle(networking::TcpSystemBundle::new(
-        listener,
-        Some(server_addr),
-    ))?;
+    let game_data = GameDataBuilder::default()
+        .with_bundle(networking::TcpSystemBundle::new(
+            listener,
+            Some(server_addr),
+        ))?
+        .with_bundle(systems::PongSystemBundle)?;
 
     let mut game = Application::build(assets_dir, ClientGameModel::default())?
         .with_frame_limit(
