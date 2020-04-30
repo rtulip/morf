@@ -1,3 +1,3 @@
 mod tcp;
 
-pub use tcp::{TcpConnectorSystem, TcpListenerSystem};
+pub use tcp::{NetworkResource, TcpSystemBundle};

@@ -22,17 +22,14 @@ fn main() -> amethyst::Result<()> {
 
     let app_root = application_root_dir()?;
 
-    let listener = TcpListener::bind("localhost:8080")?;
+    let listener = TcpListener::bind("127.0.0.1:8080")?;
     listener.set_nonblocking(true)?;
 
     let assets_dir = app_root.join("assets");
     let _config_dir = app_root.join("config");
 
-    let game_data = GameDataBuilder::default().with(
-        networking::TcpListenerSystem::new(listener),
-        "TcpListener",
-        &[],
-    );
+    let game_data =
+        GameDataBuilder::default().with_bundle(networking::TcpSystemBundle::new(listener, None))?;
 
     let mut game = Application::build(assets_dir, ServerGameModel::default())?
         .with_frame_limit(

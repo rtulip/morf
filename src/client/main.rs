@@ -5,18 +5,27 @@ use amethyst::{
     core::frame_limiter::FrameRateLimitStrategy, prelude::*, utils::application_root_dir,
 };
 use shared::networking;
+use std::net::{SocketAddr, TcpListener};
 use std::time::Duration;
 
 #[derive(Default)]
 struct ClientGameModel;
 
 impl SimpleState for ClientGameModel {
-    fn on_start(&mut self, _data: StateData<'_, GameData<'_, '_>>) {}
+    fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
+        let _world = data.world;
+    }
 }
 use log::*;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
+
+    let listener = TcpListener::bind("127.0.0.1:8000")?;
+    listener.set_nonblocking(true)?;
+    let server_addr: SocketAddr = "127.0.0.1:8080"
+        .parse()
+        .expect("Failed to parse server address");
 
     let app_root = application_root_dir()?;
 
@@ -31,8 +40,10 @@ fn main() -> amethyst::Result<()> {
         info!("config dir: {}", config_dir_str)
     }
 
-    let game_data =
-        GameDataBuilder::default().with(networking::TcpConnectorSystem, "TcpConnector", &[]);
+    let game_data = GameDataBuilder::default().with_bundle(networking::TcpSystemBundle::new(
+        listener,
+        Some(server_addr),
+    ))?;
 
     let mut game = Application::build(assets_dir, ClientGameModel::default())?
         .with_frame_limit(

@@ -1,13 +1,13 @@
 use amethyst::{
-    ecs::{System, Write},
+    core::bundle::SystemBundle,
+    ecs::{DispatcherBuilder, Read, System, World, Write},
     shrev::EventChannel,
+    Error,
 };
 use bytes::Bytes;
 use log::*;
+use std::collections::HashMap;
 use std::net::{TcpListener, TcpStream};
-
-#[derive(Debug)]
-pub struct TcpListenerBundle;
 
 use std::{io, net::SocketAddr};
 
@@ -21,54 +21,82 @@ pub enum NetworkEvent {
 
 #[derive(Default)]
 pub struct NetworkResource {
-    stream: Option<TcpStream>,
+    listener: Option<TcpListener>,
+    _streams: HashMap<SocketAddr, TcpStream>,
 }
 
-pub struct TcpListenerSystem {
-    listener: TcpListener,
-}
-
-impl TcpListenerSystem {
+impl NetworkResource {
     pub fn new(listener: TcpListener) -> Self {
-        Self { listener }
+        Self {
+            listener: Some(listener),
+            _streams: HashMap::default(),
+        }
+    }
+
+    pub fn set_listener(&mut self, listener: TcpListener) {
+        self.listener = Some(listener);
     }
 }
 
-impl<'a> System<'a> for TcpListenerSystem {
-    type SystemData = Write<'a, EventChannel<NetworkEvent>>;
+pub struct TcpSystemBundle {
+    listener: TcpListener,
+    server_addr: Option<SocketAddr>,
+}
 
-    fn run(&mut self, mut channel: Self::SystemData) {
-        loop {
-            match self.listener.accept() {
-                Ok((_stream, addr)) => {
-                    info!("New connection: {}", addr);
-                    channel.single_write(NetworkEvent::Connect(addr));
-                }
-                Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    break;
-                }
-                Err(e) => {
-                    error!("Network Error: {}", e);
-                }
-            }
+impl TcpSystemBundle {
+    pub fn new(listener: TcpListener, server_addr: Option<SocketAddr>) -> Self {
+        Self {
+            listener,
+            server_addr,
         }
     }
 }
 
-pub struct TcpConnectorSystem;
-
-impl<'a> System<'a> for TcpConnectorSystem {
-    type SystemData = Write<'a, NetworkResource>;
-
-    fn run(&mut self, mut manager: Self::SystemData) {
-        if let Some(_stream) = &manager.stream {
-            // Do nothing
-        } else {
-            if let Ok(stream) = TcpStream::connect("localhost:8080") {
-                info!("Connected to server");
-                manager.stream = Some(stream);
+impl<'a, 'b> SystemBundle<'a, 'b> for TcpSystemBundle {
+    fn build(
+        self,
+        world: &mut World,
+        builder: &mut DispatcherBuilder<'_, '_>,
+    ) -> Result<(), Error> {
+        builder.add(TcpListenerSystem, "TcpListenerSystem", &[]);
+        world.insert(NetworkResource::new(self.listener));
+        if let Some(addr) = self.server_addr {
+            if let Ok(_stream) = TcpStream::connect(addr) {
+                info!("Connected to server!");
             } else {
-                error!("Failed to connect to server");
+                warn!("Failed to connect to server!");
+            }
+        }
+
+        Ok(())
+    }
+}
+
+pub struct TcpListenerSystem;
+
+impl<'a> System<'a> for TcpListenerSystem {
+    type SystemData = (
+        Read<'a, NetworkResource>,
+        Write<'a, EventChannel<NetworkEvent>>,
+    );
+
+    fn run(&mut self, (network_res, mut channel): Self::SystemData) {
+        loop {
+            if let Some(ref listener) = network_res.listener {
+                match listener.accept() {
+                    Ok((_stream, addr)) => {
+                        info!("New connection: {}", addr);
+                        channel.single_write(NetworkEvent::Connect(addr));
+                    }
+                    Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
+                        break;
+                    }
+                    Err(e) => {
+                        error!("Network Error: {}", e);
+                    }
+                }
+            } else {
+                warn!("No NetworkListener");
             }
         }
     }
