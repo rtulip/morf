@@ -19,7 +19,6 @@ pub enum NetworkEvent {
     Message(SocketAddr, Bytes),
     Connect(SocketAddr),
     Disconnect(SocketAddr),
-    _ConnectionError(IoError, Option<SocketAddr>),
 }
 
 #[derive(Default)]
@@ -211,15 +210,14 @@ impl<'a> System<'a> for TcpNetworkEventHandlerSystem {
                 }
                 NetworkEvent::Message(addr, bytes) => {
                     info!("Recieved {:?} from {}", bytes, addr);
-                },
+                }
                 NetworkEvent::Disconnect(addr) => {
-                    if let Some(_stream) = resource.streams.remove(addr){
+                    if let Some(_stream) = resource.streams.remove(addr) {
                         info!("Disconnected {}", addr);
                     } else {
                         warn!("Failed to remove {}. Maybe already gone?", addr);
                     }
                 }
-                _ => {}
             }
         }
     }
