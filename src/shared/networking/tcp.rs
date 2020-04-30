@@ -24,7 +24,7 @@ pub enum NetworkEvent {
 #[derive(Default)]
 pub struct NetworkResource {
     listener: Option<TcpListener>,
-    streams: HashMap<SocketAddr, TcpStream>,
+    pub streams: HashMap<SocketAddr, TcpStream>,
 }
 
 impl NetworkResource {
@@ -44,6 +44,15 @@ impl NetworkResource {
                 ErrorKind::NotConnected,
                 "Not Connected to stream",
             ))
+        }
+    }
+
+    pub fn send_all(&mut self, msg: &'_ str) {
+        for (addr, stream) in self.streams.iter_mut() {
+            match stream.write(msg.as_bytes()) {
+                Err(e) => error!("Failed to send {} to {}. Error: {}", msg, addr, e),
+                _ => {}
+            }
         }
     }
 

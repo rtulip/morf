@@ -5,10 +5,11 @@ use amethyst::{
     core::frame_limiter::FrameRateLimitStrategy, prelude::*, utils::application_root_dir,
 };
 
-use shared::networking::TcpSystemBundle;
-
+use shared::networking::{self, TcpSystemBundle};
 use std::net::TcpListener;
 use std::time::Duration;
+
+mod systems;
 
 #[derive(Default)]
 struct ServerGameModel;
@@ -28,7 +29,13 @@ fn main() -> amethyst::Result<()> {
     let assets_dir = app_root.join("assets");
     let _config_dir = app_root.join("config");
 
-    let game_data = GameDataBuilder::default().with_bundle(TcpSystemBundle::new(listener, None))?;
+    let game_data = GameDataBuilder::default()
+        .with_bundle(TcpSystemBundle::new(listener, None))?
+        .with(
+            systems::Ping,
+            "Ping",
+            &[networking::TCP_NETWORK_EVENT_HANDLER_SYSTEM_NAME],
+        );
 
     let mut game = Application::build(assets_dir, ServerGameModel::default())?
         .with_frame_limit(
