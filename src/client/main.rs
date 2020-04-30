@@ -8,16 +8,14 @@ use amethyst::{
     prelude::*,
     utils::application_root_dir,
 };
+use shared::networking;
 use std::time::Duration;
-use std::net::TcpListener;
 
 #[derive(Default)]
 struct ClientGameModel;
 
 impl SimpleState for ClientGameModel {
-    fn on_start(&mut self, _data: StateData<'_, GameData<'_, '_>>) {
-        
-    }
+    fn on_start(&mut self, _data: StateData<'_, GameData<'_, '_>>) {}
 }
 use log::*;
 
@@ -25,9 +23,6 @@ fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
 
     let app_root = application_root_dir()?;
-
-    let listener = TcpListener::bind("127.0.0.1:3457")?;
-    listener.set_nonblocking(true)?;
 
     let assets_dir = app_root.join("assets");
     let config_dir = app_root.join("config");
@@ -40,7 +35,8 @@ fn main() -> amethyst::Result<()> {
         info!("config dir: {}", config_dir_str)
     }
 
-    let game_data = GameDataBuilder::default();
+    let game_data = GameDataBuilder::default()
+        .with(networking::TcpConnectorSystem, "TcpConnector", &[]);
 
     let mut game = Application::build(assets_dir, ClientGameModel::default())?
         .with_frame_limit(

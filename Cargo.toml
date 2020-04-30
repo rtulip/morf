@@ -22,6 +22,7 @@ path = "src/shared/lib.rs"
 serde = "1.0.106"
 ron = "0.5.1"
 log = "0.4.8"
+bytes = "0.5.4"
 
 [features]
 default = ["vulkan"]
