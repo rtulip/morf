@@ -21,7 +21,7 @@ use log::*;
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
 
-    let listener = TcpListener::bind("127.0.0.1:8000")?;
+    let listener = TcpListener::bind("127.0.0.1:0")?;
     listener.set_nonblocking(true)?;
     let server_addr: SocketAddr = "127.0.0.1:8080"
         .parse()
