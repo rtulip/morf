@@ -1,6 +1,3 @@
 mod tcp;
 
-pub use tcp::{
-    TcpListenerSystem,
-    TcpConnectorSystem,
-};
+pub use tcp::{TcpConnectorSystem, TcpListenerSystem};

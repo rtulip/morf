@@ -1,12 +1,8 @@
-extern crate serde;
 extern crate ron;
+extern crate serde;
 extern crate shared;
 use amethyst::{
-    core::{
-        frame_limiter::FrameRateLimitStrategy,
-    },
-    prelude::*,
-    utils::application_root_dir,
+    core::frame_limiter::FrameRateLimitStrategy, prelude::*, utils::application_root_dir,
 };
 use shared::networking;
 use std::time::Duration;
@@ -35,8 +31,8 @@ fn main() -> amethyst::Result<()> {
         info!("config dir: {}", config_dir_str)
     }
 
-    let game_data = GameDataBuilder::default()
-        .with(networking::TcpConnectorSystem, "TcpConnector", &[]);
+    let game_data =
+        GameDataBuilder::default().with(networking::TcpConnectorSystem, "TcpConnector", &[]);
 
     let mut game = Application::build(assets_dir, ClientGameModel::default())?
         .with_frame_limit(
