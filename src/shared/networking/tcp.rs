@@ -7,18 +7,18 @@ use amethyst::{
 };
 use bytes::Bytes;
 use log::*;
-use std::collections::HashMap;
-use std::io::{Error as IoError, ErrorKind, Read as IoRead, Result as IoResult, Write as IoWrite};
-use std::net::SocketAddr;
-use std::net::{TcpListener, TcpStream};
-use std::ops::DerefMut;
+use std::{
+    collections::HashMap,
+    io::{Error as IoError, ErrorKind, Read as IoRead, Result as IoResult, Write as IoWrite},
+    net::{SocketAddr, TcpListener, TcpStream},
+    ops::DerefMut,
+};
 
 #[derive(Debug)]
 pub enum NetworkEvent {
     Message(SocketAddr, Bytes),
     Connect(SocketAddr),
-    _Disconnect(SocketAddr),
-    _ConnectionError(IoError, Option<SocketAddr>),
+    Disconnect(SocketAddr),
 }
 
 #[derive(Default)]
@@ -169,9 +169,12 @@ impl<'a> System<'a> for TcpNetworkListenerSystem {
                     }
                 }
                 Err(e) if e.kind() == ErrorKind::WouldBlock => {}
-                Err(e) => {
-                    error!("Network Recv Error: {}", e);
-                }
+                Err(e) => match e.kind() {
+                    ErrorKind::ConnectionReset => {
+                        channel.single_write(NetworkEvent::Disconnect(*addr));
+                    }
+                    _ => error!("Unknown Network Recv Error: {} {:?}", e, e.kind()),
+                },
             }
         }
     }
@@ -208,7 +211,13 @@ impl<'a> System<'a> for TcpNetworkEventHandlerSystem {
                 NetworkEvent::Message(addr, bytes) => {
                     info!("Recieved {:?} from {}", bytes, addr);
                 }
-                _ => {}
+                NetworkEvent::Disconnect(addr) => {
+                    if let Some(_stream) = resource.streams.remove(addr) {
+                        info!("Disconnected {}", addr);
+                    } else {
+                        warn!("Failed to remove {}. Maybe already gone?", addr);
+                    }
+                }
             }
         }
     }
